@@ -1,0 +1,16 @@
+repositories:
+  - https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+dnf:
+  - fish
+  - v4l2loopback
+  - v4l-utils
+  - fzf
+  - ripgrep
+  - brave-browser
+flatpak:
+  - com.getpostman.Postman
+  - com.google.Chrome
+  - io.dbeaver.DBeaverCommunity
+  - org.blender.Blender
+post_install:
+  - echo "Installation complete! Please restart your shell to use fish."
