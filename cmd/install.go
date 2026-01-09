@@ -11,6 +11,7 @@ import (
 var (
 	configPath   string
 	onlyDNF      bool
+	onlyAPT      bool
 	onlyFlatpak  bool
 	repositories bool
 )
@@ -19,61 +20,24 @@ var (
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install programs from the configuration file",
-	Long:  `This command reads the configuration file and installs listed DNF and Flatpak programs. By default, it installs everything.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.LoadConfig(configPath)
-		if err != nil {
-			log.Fatalf("Failed to load config: %v", err)
+	Long:  `Parent command for installation operations. Use subcommands 'fedora' or 'debian' to target specific distributions.`,
+}
+
+func setupFlatpakRemotes(cfg *config.Config) {
+	remotes := cfg.FlatpakRemotes
+	if len(remotes) == 0 {
+		remotes = []config.FlatpakRemote{
+			{Name: "flathub", Url: "https://flathub.org/repo/flathub.flatpakrepo"},
 		}
+	}
 
-		// If no specific flags are set, install everything
-		installAll := !onlyDNF && !onlyFlatpak && !repositories
-
-		if repositories || installAll {
-			if err := installer.SetupRepositories(cfg.Repositories); err != nil {
-				log.Fatalf("Failed to setup repositories: %v", err)
-			}
-		}
-
-		// Setup Flatpak remotes
-		if repositories || installAll || onlyFlatpak {
-			remotes := cfg.FlatpakRemotes
-			if len(remotes) == 0 {
-				remotes = []config.FlatpakRemote{
-					{Name: "flathub", Url: "https://flathub.org/repo/flathub.flatpakrepo"},
-				}
-			}
-
-			if err := installer.SetupFlatpakRemotes(remotes); err != nil {
-				log.Fatalf("Failed to setup flatpak remotes: %v", err)
-			}
-		}
-
-		if onlyDNF || installAll {
-			if err := installer.InstallDNF(cfg.DNF); err != nil {
-				log.Fatalf("DNF installation failed: %v", err)
-			}
-		}
-
-		if onlyFlatpak || installAll {
-			if err := installer.InstallFlatpak(cfg.Flatpak); err != nil {
-				log.Fatalf("Flatpak installation failed: %v", err)
-			}
-		}
-
-		if installAll {
-			if err := installer.RunScripts(cfg.PostInstall); err != nil {
-				log.Fatalf("Post-install scripts failed: %v", err)
-			}
-		}
-	},
+	if err := installer.SetupFlatpakRemotes(remotes); err != nil {
+		log.Fatalf("Failed to setup flatpak remotes: %v", err)
+	}
 }
 
 func init() {
 	rootCmd.AddCommand(installCmd)
 
-	installCmd.Flags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to the configuration file")
-	installCmd.Flags().BoolVar(&onlyDNF, "dnf", false, "Only install DNF packages")
-	installCmd.Flags().BoolVar(&onlyFlatpak, "flatpak", false, "Only install Flatpak apps")
-	installCmd.Flags().BoolVar(&repositories, "repos", false, "Only setup repositories")
+	installCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "config.yaml", "Path to the configuration file")
 }

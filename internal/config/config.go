@@ -13,6 +13,7 @@ type FlatpakRemote struct {
 
 type Config struct {
 	DNF            []string        `yaml:"dnf"`
+	APT            []string        `yaml:"apt"`
 	Flatpak        []string        `yaml:"flatpak"`
 	FlatpakRemotes []FlatpakRemote `yaml:"flatpak_remotes"`
 	Repositories   []string        `yaml:"repositories"`
