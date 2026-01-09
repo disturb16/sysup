@@ -35,6 +35,20 @@ var installCmd = &cobra.Command{
 			}
 		}
 
+		// Setup Flatpak remotes
+		if repositories || installAll || onlyFlatpak {
+			remotes := cfg.FlatpakRemotes
+			if len(remotes) == 0 {
+				remotes = []config.FlatpakRemote{
+					{Name: "flathub", Url: "https://flathub.org/repo/flathub.flatpakrepo"},
+				}
+			}
+
+			if err := installer.SetupFlatpakRemotes(remotes); err != nil {
+				log.Fatalf("Failed to setup flatpak remotes: %v", err)
+			}
+		}
+
 		if onlyDNF || installAll {
 			if err := installer.InstallDNF(cfg.DNF); err != nil {
 				log.Fatalf("DNF installation failed: %v", err)

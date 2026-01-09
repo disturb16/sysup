@@ -11,7 +11,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "sysup",
 	Short: "A CLI tool to automate the installation of programs on Linux",
-	Long:  `sysup is a CLI tool designed for Fedora users who frequently reinstall their OS. It automates the installation of system packages via DNF and desktop applications via Flatpak based on a YAML configuration file.`,
+	Long:  `sysup is a CLI tool designed for Linu users who frequently reinstall their OS. It automates the installation of system packages via DNF and desktop applications via Flatpak based on a YAML configuration file.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

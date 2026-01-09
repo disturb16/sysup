@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/disturb16/sysup/internal/config"
 )
 
 func SetupRepositories(repos []string) error {
@@ -82,14 +84,56 @@ func InstallDNF(packages []string) error {
 
 	fmt.Printf("Installing DNF packages: %s\n", strings.Join(packages, ", "))
 
-	args := append([]string{"install", "-y"}, packages...)
-	cmd := exec.Command("sudo", append([]string{"dnf"}, args...)...)
+	args := append([]string{"dnf", "install", "--skip-unavailable"}, packages...)
+	cmd := exec.Command("sudo", args...)
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
 	return cmd.Run()
+}
+
+func getInstalledFlatpaks() (map[string]bool, error) {
+	cmd := exec.Command("flatpak", "list", "--app", "--columns=application")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	installed := make(map[string]bool)
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			installed[trimmed] = true
+		}
+	}
+	return installed, nil
+}
+
+func SetupFlatpakRemotes(remotes []config.FlatpakRemote) error {
+	if len(remotes) == 0 {
+		return nil
+	}
+
+	if !commandExists("flatpak") {
+		fmt.Println("Flatpak not found. Installing flatpak via DNF...")
+		if err := InstallDNF([]string{"flatpak"}); err != nil {
+			return fmt.Errorf("failed to install flatpak: %v", err)
+		}
+	}
+
+	for _, remote := range remotes {
+		fmt.Printf("Adding Flatpak remote: %s (%s)\n", remote.Name, remote.Url)
+		cmd := exec.Command("flatpak", "remote-add", "--if-not-exists", remote.Name, remote.Url)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to add flatpak remote %s: %v", remote.Name, err)
+		}
+	}
+	return nil
 }
 
 func InstallFlatpak(apps []string) error {
@@ -104,13 +148,37 @@ func InstallFlatpak(apps []string) error {
 		}
 	}
 
-	// Add flathub repository if not present
-	_ = exec.Command("flatpak", "remote-add", "--if-not-exists", "flathub", "https://flathub.org/repo/flathub.flatpakrepo").Run()
+	installed, err := getInstalledFlatpaks()
+	if err != nil {
+		fmt.Printf("Warning: Failed to check installed flatpaks: %v\n", err)
+		installed = make(map[string]bool)
+	}
 
-	fmt.Printf("Installing Flatpak apps: %s\n", strings.Join(apps, ", "))
+	var appsToInstall []string
+	for _, app := range apps {
+		// handle specific remote/app syntax like remote/app.id
+		appName := app
+		parts := strings.Split(app, "/")
+		if len(parts) > 1 {
+			appName = parts[len(parts)-1]
+		}
 
-	args := []string{"install", "-y", "--or-update", "flathub"}
-	args = append(args, apps...)
+		if installed[appName] {
+			fmt.Printf("Flatpak app %s is already installed, skipping.\n", appName)
+			continue
+		}
+		appsToInstall = append(appsToInstall, app)
+	}
+
+	if len(appsToInstall) == 0 {
+		fmt.Println("All requested Flatpak apps are already installed.")
+		return nil
+	}
+
+	fmt.Printf("Installing Flatpak apps: %s\n", strings.Join(appsToInstall, ", "))
+
+	args := []string{"install", "-y", "--or-update"}
+	args = append(args, appsToInstall...)
 
 	cmd := exec.Command("flatpak", args...)
 	cmd.Stdout = os.Stdout

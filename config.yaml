@@ -1,16 +1,38 @@
 repositories:
   - https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+  - https://download.docker.com/linux/fedora/docker-ce.repo
 dnf:
+  - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-43.noarch.rpm
   - fish
   - v4l2loopback
   - v4l-utils
   - fzf
   - ripgrep
   - brave-browser
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+flatpak_remotes:
+  - name: flathub
+    url: https://flathub.org/repo/flathub.flatpakrepo
+  - name: gnome-nightly
+    url: https://nightly.gnome.org/gnome-nightly.flatpakrepo
 flatpak:
   - com.getpostman.Postman
   - com.google.Chrome
   - io.dbeaver.DBeaverCommunity
   - org.blender.Blender
+  - com.discordapp.Discord
+  # - org.audacityteam.Audacity
+  - md.obsidian.Obsidian
+  - com.github.tchx84.Flatseal
+  - org.gnome.World.PikaBackup
+  - org.videolan.VLC
+  - org.gnome.Calculator
+  # You can specify the remote if needed (depending on flatpak version/behavior)
+  # - gnome-nightly/org.gnome.Calculator- com.mattjakeman.ExtensionManager
 post_install:
+  - chsh -s $(which fish)
   - echo "Installation complete! Please restart your shell to use fish."

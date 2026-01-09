@@ -6,11 +6,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type FlatpakRemote struct {
+	Name string `yaml:"name"`
+	Url  string `yaml:"url"`
+}
+
 type Config struct {
-	DNF          []string `yaml:"dnf"`
-	Flatpak      []string `yaml:"flatpak"`
-	Repositories []string `yaml:"repositories"`
-	PostInstall  []string `yaml:"post_install"`
+	DNF            []string        `yaml:"dnf"`
+	Flatpak        []string        `yaml:"flatpak"`
+	FlatpakRemotes []FlatpakRemote `yaml:"flatpak_remotes"`
+	Repositories   []string        `yaml:"repositories"`
+	PostInstall    []string        `yaml:"post_install"`
 }
 
 func LoadConfig(path string) (*Config, error) {
